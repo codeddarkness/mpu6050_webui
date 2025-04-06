@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# web_server.py - v1.0.0
+# Flask web server for MPU6050 sensor visualization
+
+from flask import Flask, render_template, jsonify, send_file, Response
+import json
+import os
+import threading
+import time
+import board
+import busio
+import adafruit_mpu6050
+
+app = Flask(__name__)
+
+# Global sensor data (updated by background thread)
+sensor_data = {
+    "acceleration": {"x": 0, "y": 0, "z": 0},
+    "gyro": {"x": 0, "y": 0, "z": 0},
+    "temperature": 0
+}
+
+# Load configuration
+def load_config():
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            return json.load(f)
+    return {
+        "data_file": "sensor_data.json",
+        "sample_rate": 0.1,
+        "calibration": {
+            "x_offset": 0,
+            "y_offset": 0,
+            "z_offset": 0,
+            "calibrated": False
+        }
+    }
+
+# Initialize sensor
+def init_sensor():
+    config = load_config()
+    i2c = busio.I2C(board.SCL, board.SDA)
+    mpu = adafruit_mpu6050.MPU6050(i2c)
+    return mpu, config
+
+# Read sensor with calibration
+def read_sensor(mpu, config):
+    ax, ay, az = mpu.acceleration
+    gx, gy, gz = mpu.gyro
+    temp = mpu.temperature
+    
+    # Apply calibration if available
+    if config["calibration"]["calibrated"]:
+        ax += config["calibration"]["x_offset"]
+        ay += config["calibration"]["y_offset"]
+        az += config["calibration"]["z_offset"]
+    
+    return {
+        "acceleration": {"x": ax, "y": ay, "z": az},
+        "gyro": {"x": gx, "y": gy, "z": gz},
+        "temperature": temp
+    }
+
+# Background thread to continuously read sensor
+def sensor_thread():
+    global sensor_data
+    mpu, config = init_sensor()
+    
+    while True:
+        sensor_data = read_sensor(mpu, config)
+        time.sleep(0.1)  # 10 Hz update rate
+
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/data')
+def get_data():
+    return jsonify(sensor_data)
+
+@app.route('/logdata')
+def get_log_data():
+    config = load_config()
+    try:
+        with open(config["data_file"], "r") as f:
+            return jsonify(json.load(f))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return jsonify({"readings": []})
+
+@app.route('/download')
+def download_data():
+    config = load_config()
+    return send_file(config["data_file"], as_attachment=True)
+
+if __name__ == '__main__':
+    # Start sensor reading in background thread
+    thread = threading.Thread(target=sensor_thread, daemon=True)
+    thread.start()
+    
+    # Start Flask server
+    print("Starting web server at http://0.0.0.0:5000")
+    app.run(host='0.0.0.0', port=5000, debug=False)
+
