@@ -37,7 +37,7 @@ do
             echo "Startup cancelled"
             break
             ;;
-        *) 
+        *)
             echo "Invalid option $REPLY"
             ;;
     esac

@@ -1,3 +1,10 @@
+#!/bin/bash
+# fix_webui_v1.0.3.sh - Fix web UI issues
+
+echo "Fixing web UI issues..."
+
+# Update the status bar display to prevent overflow
+cat > templates/index.html << 'EOT'
 <!-- templates/index.html - v1.0.3 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -357,11 +364,11 @@
                     document.getElementById('gyro-y').textContent = data.gyro.y.toFixed(2);
                     document.getElementById('gyro-z').textContent = data.gyro.z.toFixed(2);
                     document.getElementById('temp').textContent = data.temperature.toFixed(1);
-
+                    
                     // Calculate Fahrenheit temperature
                     const fahrenheit = (data.temperature * 9/5) + 32;
                     document.getElementById('temp-f').textContent = fahrenheit.toFixed(1);
-
+                    
                     // Update arrows
                     document.getElementById('acc-x-arrow').innerHTML = getArrow(data.acceleration.x);
                     document.getElementById('acc-y-arrow').innerHTML = getVerticalArrow(data.acceleration.y);
@@ -369,22 +376,22 @@
                     document.getElementById('gyro-x-arrow').innerHTML = getVerticalArrow(data.gyro.x);
                     document.getElementById('gyro-y-arrow').innerHTML = getVerticalArrow(data.gyro.y);
                     document.getElementById('gyro-z-arrow').innerHTML = getArrow(data.gyro.z);
-
+                    
                     // Update sensor data for 3D model orientation
                     gyroData.x = data.gyro.x;
                     gyroData.y = data.gyro.y;
                     gyroData.z = data.gyro.z;
-
+                    
                     accelData.x = data.acceleration.x;
                     accelData.y = data.acceleration.y;
                     accelData.z = data.acceleration.z;
-
+                    
                     // Calculate orientation
                     updateOrientation();
                 })
                 .catch(error => console.error('Error fetching data:', error));
         }
-
+        
         // Update 3D model orientation using complementary filter
         function updateOrientation() {
             // Get current time
@@ -393,31 +400,31 @@
                 lastTimestamp = now;
                 return;
             }
-
+            
             // Calculate time delta in seconds
             const dt = (now - lastTimestamp) / 1000;
             lastTimestamp = now;
-
+            
             // Calculate accel-based orientation (gravity direction)
             const accelVector = new THREE.Vector3(
                 accelData.x,
                 accelData.y,
                 accelData.z
             ).normalize();
-
+            
             // Use cross product with world up vector to get rotation axis
             const up = new THREE.Vector3(0, 1, 0);
             const rotationAxis = new THREE.Vector3().crossVectors(up, accelVector);
-
+            
             // Calculate rotation angle
             const rotationAngle = Math.acos(up.dot(accelVector));
-
+            
             // Create quaternion from axis-angle
             const accelQuat = new THREE.Quaternion().setFromAxisAngle(
-                rotationAxis.normalize(),
+                rotationAxis.normalize(), 
                 rotationAngle
             );
-
+            
             // Create quaternion from gyro data
             const gyroQuat = new THREE.Quaternion().setFromEuler(
                 new THREE.Euler(
@@ -427,24 +434,24 @@
                     'XYZ'
                 )
             );
-
+            
             // Apply gyro rotation to current orientation
             sensorQuaternion.multiply(gyroQuat);
-
+            
             // Complementary filter - blend between gyro and accel
             // (90% gyro, 10% accel)
             sensorQuaternion.slerp(accelQuat, 0.1);
-
+            
             // Apply to 3D model
             board.quaternion.copy(sensorQuaternion);
         }
-
+        
         // Animation/render loop
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
-
+        
         // Handle window resize
         function onResize() {
             camera.aspect = container.clientWidth / container.clientHeight;
@@ -452,7 +459,7 @@
             renderer.setSize(container.clientWidth, container.clientHeight);
         }
         window.addEventListener('resize', onResize);
-
+        
         // Toggle debug info
         document.getElementById('toggle-debug').addEventListener('click', function() {
             const debugInfo = document.getElementById('debug-info');
@@ -460,7 +467,7 @@
             debugInfo.style.display = isHidden ? 'block' : 'none';
             this.textContent = isHidden ? 'Hide Debug Info' : 'Show Debug Info';
         });
-
+        
         // Toggle API documentation
         document.getElementById('toggle-api').addEventListener('click', function() {
             const apiDocs = document.getElementById('api-docs');
@@ -468,10 +475,13 @@
             apiDocs.style.display = isHidden ? 'block' : 'none';
             this.textContent = isHidden ? 'Hide API Docs' : 'API Documentation';
         });
-
+        
         // Start everything
         animate();
         setInterval(updateData, 100); // Update data 10 times per second
     </script>
 </body>
 </html>
+EOT
+
+echo "Fixed web UI issues"

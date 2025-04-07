@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# mpu6050_monitor.py - v1.0.3
+# mpu6050_monitor.py - v1.0.2
 # Console monitor for MPU6050 sensor with web interface
 
 import time
@@ -38,15 +38,15 @@ handler.setLevel(logging.INFO)
 app.logger.addHandler(handler)
 app.logger.setLevel(logging.INFO)
 
-# Global start time for uptime tracking
-start_time = time.time()
-
 # Global sensor data (updated by background thread)
 sensor_data = {
     "acceleration": {"x": 0, "y": 0, "z": 0},
     "gyro": {"x": 0, "y": 0, "z": 0},
     "temperature": 0
 }
+
+# Global start time for uptime tracking
+start_time = time.time()
 
 # Global flag to control the main loop
 running = True
@@ -112,25 +112,16 @@ def save_data(data, config):
     if os.path.exists(config["data_file"]):
         try:
             with open(config["data_file"], "r") as f:
-                content = f.read().strip()
-                if content:
-                    existing_data = json.loads(content)
-                else:
-                    existing_data = {"readings": []}
-        except (json.JSONDecodeError, FileNotFoundError):
+                existing_data = json.load(f)
+        except json.JSONDecodeError:
             existing_data = {"readings": []}
     else:
         existing_data = {"readings": []}
     
     # Add new data and save
-    if "readings" not in existing_data:
-        existing_data["readings"] = []
-        
     existing_data["readings"].append(data)
-    
-    # Save with proper formatting
     with open(config["data_file"], "w") as f:
-        json.dump(existing_data, f, indent=2)
+        json.dump(existing_data, f)
 
 def get_direction_arrow(ax, ay):
     """Return ASCII arrow indicating direction based on acceleration"""
@@ -231,18 +222,7 @@ def run_console_mode(mpu, config):
     """Run in console mode showing sensor data"""
     global running
     
-    # Prepare for non-blocking key input
-    import tty
-    import termios
-    import select
-    import sys
-    
-    # Save terminal settings
-    old_settings = termios.tcgetattr(sys.stdin)
     try:
-        # Set terminal to raw mode
-        tty.setraw(sys.stdin.fileno())
-        
         while running:
             # Get sensor data
             data = sensor_data
@@ -275,41 +255,39 @@ def run_console_mode(mpu, config):
             
             # Display header
             print("╔══════════════════════════════════════════════════════╗")
-            print("║               MPU6050 MONITOR v1.0.3                 ║")
+            print("║               MPU6050 MONITOR v1.0.2                 ║")
             print("╠══════════════════════════════════════════════════════╣")
             
-            # One line status display
-            print(f"║ Acc(m/s²) X:{ax:7.2f}{acc_x_arrow} Y:{ay:7.2f}{acc_y_arrow} Z:{az:7.2f}{acc_z_arrow} | ", end='')
-            print(f"Gyro X:{gx:6.2f}{gyro_x_arrow} Y:{gy:6.2f}{gyro_y_arrow} Z:{gz:6.2f}{gyro_z_arrow} | ", end='')
-            print(f"T:{temp:5.1f}°C/{temp_f:5.1f}°F ║")
+            # One line status display as requested
+            print(f"║ Accel(m/s²) X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow} | ", end='')
+            print(f"Gyro(rad/s) X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow} | ", end='')
+            print(f"Temp: {temp:5.1f}°C / {temp_f:5.1f}°F ║")
             
             # Additional info
             print("╠══════════════════════════════════════════════════════╣")
-            print(f"║ Direction: {overall_direction}                             ║")
+            print(f"║ Direction: {overall_direction}                                               ║")
             print(f"║ Web Interface: http://localhost:5000             ║")
-            print(f"║ API: http://localhost:5000/api/v1/data           ║")
             print("╠══════════════════════════════════════════════════════╣")
             print("║ [c] Calibrate  [q] Quit              ║")
             print("╚══════════════════════════════════════════════════════╝")
             
-            # Check for keypresses with timeout
-            if select.select([sys.stdin], [], [], 0.1)[0]:  # 100ms timeout
+            # Wait for keypress with timeout
+            import select
+            import sys
+            
+            # Check for keypresses (non-blocking)
+            if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
                 key = sys.stdin.read(1)
                 if key.lower() == 'q':
                     running = False
                     break
                 elif key.lower() == 'c':
-                    # Reset terminal settings before calibrating
-                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
                     calibrate_sensor(mpu)
-                    # Set terminal back to raw mode
-                    tty.setraw(sys.stdin.fileno())
             
-            time.sleep(0.2)  # Slower refresh rate to reduce flicker
+            time.sleep(config["sample_rate"])
             
-    finally:
-        # Restore terminal settings
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    except KeyboardInterrupt:
+        running = False
         print("\nExiting...")
 
 def signal_handler(sig, frame):
@@ -342,66 +320,19 @@ def download_data():
     config = load_config()
     return send_file(config["data_file"], as_attachment=True)
 
-# API Routes
-@app.route('/api/v1/data')
-def api_get_data():
-    """API endpoint to get current sensor data"""
-    return jsonify({
-        "version": "1.0.3",
-        "timestamp": datetime.now().isoformat(),
-        "data": sensor_data
-    })
-
-@app.route('/api/v1/status')
-def api_get_status():
-    """API endpoint to get system status"""
-    config = load_config()
-    return jsonify({
-        "version": "1.0.3",
-        "uptime": time.time() - start_time,
-        "calibrated": config["calibration"]["calibrated"],
-        "sample_rate": config["sample_rate"],
-        "data_file": config["data_file"]
-    })
-
-@app.route('/api/v1/log')
-def api_get_log():
-    """API endpoint to get logged data"""
-    config = load_config()
-    try:
-        with open(config["data_file"], "r") as f:
-            content = f.read().strip()
-            if content:
-                return jsonify(json.loads(content))
-            else:
-                return jsonify({"readings": []})
-    except (FileNotFoundError, json.JSONDecodeError):
-        return jsonify({"readings": []})
-
-@app.route('/api/v1/calibrate', methods=['POST'])
-def api_calibrate():
-    """API endpoint to trigger calibration"""
-    global sensor_data
-    
-    # We can't directly calibrate the sensor here as it requires console input
-    # So just return the current calibration values
-    config = load_config()
-    
-    return jsonify({
-        "status": "success",
-        "message": "Current calibration values returned. Use console mode for full calibration.",
-        "calibration": config["calibration"]
-    })
-
 def start_web_server():
     """Start the Flask web server"""
-    # Configure logging to file only for werkzeug
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)  # Only log errors
-    file_handler = logging.FileHandler('web_server.log')
-    file_handler.setLevel(logging.ERROR)
-    log.addHandler(file_handler)
-    log.disabled = True  # Disable console output
+    # Redirect Flask logs to file
+    import logging
+    from logging.handlers import RotatingFileHandler
+    
+    log_handler = RotatingFileHandler('web_server.log', maxBytes=10000, backupCount=1)
+    log_handler.setLevel(logging.INFO)
+    log_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    app.logger.addHandler(log_handler)
+    app.logger.setLevel(logging.INFO)
     
     # Start the server
     logger.info("Starting web server at http://0.0.0.0:5000")
