@@ -1,3 +1,10 @@
+#!/bin/bash
+# fix_v1.0.2_web_ui.sh - Fix remaining web UI issues
+
+echo "Fixing remaining web UI issues..."
+
+# Fix the HTML layout - put 3D vis and status bar in same container
+cat > templates/index.html << 'EOT'
 <!-- templates/index.html - v1.0.2 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -20,13 +27,16 @@
             margin: 0 auto;
             padding: 20px;
         }
-        .visualization-panel {
+        .main-panel {
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin: 10px;
             padding: 15px;
             width: calc(100% - 50px);
+        }
+        .visualization-container {
+            width: 100%;
             height: 400px;
             position: relative;
         }
@@ -35,9 +45,9 @@
             height: 100%;
         }
         .status-panel {
-            width: calc(100% - 20px);
+            width: 100%;
             padding: 10px;
-            margin: 10px;
+            margin-top: 10px;
             background-color: #333;
             color: white;
             border-radius: 5px;
@@ -45,6 +55,7 @@
             font-size: 14px;
             overflow-x: auto;
             white-space: nowrap;
+            box-sizing: border-box;
         }
         .status-value {
             display: inline-block;
@@ -96,38 +107,56 @@
             margin: 10px;
             padding: 15px;
         }
+        /* For debugging */
+        .debug-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="visualization-panel">
+        <div class="main-panel">
             <h1>MPU6050 3D Orientation</h1>
-            <div id="visualization"></div>
-        </div>
-        
-        <div class="status-panel" id="status-bar">
-            <span class="status-section">
-                <span class="status-label">Acceleration (m/s²)</span>
-                X: <span class="status-value" id="acc-x">0.00</span> <span class="arrow" id="acc-x-arrow">&lt;</span>
-                Y: <span class="status-value" id="acc-y">0.00</span> <span class="arrow" id="acc-y-arrow">^</span>
-                Z: <span class="status-value" id="acc-z">0.00</span> <span class="arrow" id="acc-z-arrow">&gt;</span>
-            </span>
-            <span class="status-section">|</span>
-            <span class="status-section">
-                <span class="status-label">Gyroscope (rad/s)</span>
-                X: <span class="status-value" id="gyro-x">0.00</span> <span class="arrow" id="gyro-x-arrow">v</span>
-                Y: <span class="status-value" id="gyro-y">0.00</span> <span class="arrow" id="gyro-y-arrow">^</span>
-                Z: <span class="status-value" id="gyro-z">0.00</span> <span class="arrow" id="gyro-z-arrow">&gt;</span>
-            </span>
-            <span class="status-section">|</span>
-            <span class="status-section">
-                <span class="status-label">Temperature</span>
-                <span class="status-value" id="temp">0.0</span> °C / <span class="status-value" id="temp-f">32.0</span> °F
-            </span>
+            <div class="visualization-container">
+                <div id="visualization"></div>
+            </div>
+            
+            <div class="status-panel" id="status-bar">
+                <span class="status-section">
+                    <span class="status-label">Acceleration (m/s²)</span>
+                    X: <span class="status-value" id="acc-x">0.00</span> <span class="arrow" id="acc-x-arrow">&lt;</span>
+                    Y: <span class="status-value" id="acc-y">0.00</span> <span class="arrow" id="acc-y-arrow">^</span>
+                    Z: <span class="status-value" id="acc-z">0.00</span> <span class="arrow" id="acc-z-arrow">&gt;</span>
+                </span>
+                <span class="status-section">|</span>
+                <span class="status-section">
+                    <span class="status-label">Gyroscope (rad/s)</span>
+                    X: <span class="status-value" id="gyro-x">0.00</span> <span class="arrow" id="gyro-x-arrow">v</span>
+                    Y: <span class="status-value" id="gyro-y">0.00</span> <span class="arrow" id="gyro-y-arrow">^</span>
+                    Z: <span class="status-value" id="gyro-z">0.00</span> <span class="arrow" id="gyro-z-arrow">&gt;</span>
+                </span>
+                <span class="status-section">|</span>
+                <span class="status-section">
+                    <span class="status-label">Temperature</span>
+                    <span class="status-value" id="temp">0.0</span> °C / <span class="status-value" id="temp-f">32.0</span> °F
+                </span>
+            </div>
+            
+            <!-- Debug info (hidden by default) -->
+            <div class="debug-info" id="debug-info">
+                Raw data: <span id="raw-data"></span>
+            </div>
         </div>
         
         <div class="actions">
             <a href="/download" class="button">Download Log Data</a>
+            <button id="toggle-debug" class="button" style="background-color: #888;">Show Debug Info</button>
         </div>
     </div>
 
@@ -221,7 +250,14 @@
             fetch('/data')
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Data received:", data);
+                    // For debugging
+                    document.getElementById('raw-data').textContent = JSON.stringify(data);
+                    
+                    // Check if data has all required fields
+                    if (!data.acceleration || !data.gyro || data.temperature === undefined) {
+                        console.error("Incomplete data received:", data);
+                        return;
+                    }
                     
                     // Update displayed values
                     document.getElementById('acc-x').textContent = data.acceleration.x.toFixed(2);
@@ -327,9 +363,47 @@
         }
         window.addEventListener('resize', onResize);
         
+        // Toggle debug info
+        document.getElementById('toggle-debug').addEventListener('click', function() {
+            const debugInfo = document.getElementById('debug-info');
+            const isHidden = debugInfo.style.display === 'none' || debugInfo.style.display === '';
+            debugInfo.style.display = isHidden ? 'block' : 'none';
+            this.textContent = isHidden ? 'Hide Debug Info' : 'Show Debug Info';
+        });
+        
         // Start everything
         animate();
         setInterval(updateData, 100); // Update data 10 times per second
     </script>
 </body>
 </html>
+EOT
+
+echo "Fixed web UI layout and display issues"
+
+# Create a script to fix the console display width
+cat > fix_console_display.sh << 'EOT'
+#!/bin/bash
+# Fix console display width issues
+
+# Find the line with the single-line status display
+grep -n "print(f\"║ Accel" mpu6050_monitor.py > /dev/null
+if [ $? -eq 0 ]; then
+    # Reduce width by adjusting the box
+    sed -i 's/╔════════════════════════════════════════════════════════════╗/╔══════════════════════════════════════════════════════╗/g' mpu6050_monitor.py
+    sed -i 's/║               MPU6050 MONITOR v1.0.2                       ║/║               MPU6050 MONITOR v1.0.2                 ║/g' mpu6050_monitor.py
+    sed -i 's/╠════════════════════════════════════════════════════════════╣/╠══════════════════════════════════════════════════════╣/g' mpu6050_monitor.py
+    sed -i 's/║ Direction: .*/║ Direction: .*                                   ║/║ Direction: .*                             ║/g' mpu6050_monitor.py
+    sed -i 's/║ Web Interface: http:\/\/localhost:5000                       ║/║ Web Interface: http:\/\/localhost:5000             ║/g' mpu6050_monitor.py
+    sed -i 's/║ \[c\] Calibrate  \[q\] Quit                                    ║/║ \[c\] Calibrate  \[q\] Quit              ║/g' mpu6050_monitor.py
+    sed -i 's/╚════════════════════════════════════════════════════════════╝/╚══════════════════════════════════════════════════════╝/g' mpu6050_monitor.py
+fi
+
+echo "Fixed console display width"
+EOT
+
+chmod +x fix_console_display.sh
+./fix_console_display.sh
+
+echo "All fixes applied. Restart the application with:"
+echo "  ./restart.sh"
