@@ -10,3 +10,9 @@
 2025-04-06 19:52:21,526 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
 2025-04-06 19:52:21,530 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
 2025-04-06 19:52:21,955 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-06 19:54:45,861 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-06 19:54:45,864 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-06 19:54:46,288 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-06 19:57:43,711 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-06 19:57:43,714 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-06 19:57:44,138 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
