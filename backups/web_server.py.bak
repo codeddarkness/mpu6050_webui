@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# mpu6050_monitor.py - v1.0.1
+# web_server.py - v1.0.1
 # Flask web server for MPU6050 sensor visualization
 
 from flask import Flask, render_template, jsonify, send_file, Response
@@ -14,27 +14,6 @@ import adafruit_mpu6050
 app = Flask("mpu6050_web_server")
 
 # Global sensor data (updated by background thread)
-sensor_data = {
-    "acceleration": {"x": 0, "y": 0, "z": 0},
-    "gyro": {"x": 0, "y": 0, "z": 0},
-    "temperature": 0
-}
-
-# Load configuration
-def load_config():
-    if os.path.exists("config.json"):
-        with open("config.json", "r") as f:
-            return json.load(f)
-    return {
-        "data_file": "sensor_data.json",
-        "sample_rate": 0.1,
-        "calibration": {
-            "x_offset": 0,
-            "y_offset": 0,
-            "z_offset": 0,
-            "calibrated": False
-        }
-    }
 
 # Initialize sensor
 def init_sensor():
@@ -42,7 +21,6 @@ def init_sensor():
     try:
         i2c = busio.I2C(board.SCL, board.SDA)
         mpu = adafruit_mpu6050.MPU6050(i2c)
-        print("MPU6050 sensor initialized successfully")
         return mpu, config
     except Exception as e:
         print(f"Error initializing sensor: {e}")
@@ -74,7 +52,7 @@ def sensor_thread():
     
     if mpu is None:
         print("WARNING: Sensor initialization failed. Using dummy data.")
-        # Return dummy data for testing
+        # Just return dummy data for testing
         while True:
             sensor_data = {
                 "acceleration": {"x": 0, "y": 0, "z": 9.8},
@@ -90,6 +68,51 @@ def sensor_thread():
         except Exception as e:
             print(f"Error reading sensor: {e}")
             time.sleep(1)  # Retry after a longer delay
+sensor_data = {
+    "acceleration": {"x": 0, "y": 0, "z": 0},
+    "gyro": {"x": 0, "y": 0, "z": 0},
+    "temperature": 0
+}
+
+# Load configuration
+def load_config():
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            return json.load(f)
+    return {
+        "data_file": "sensor_data.json",
+        "sample_rate": 0.1,
+        "calibration": {
+            "x_offset": 0,
+            "y_offset": 0,
+            "z_offset": 0,
+            "calibrated": False
+        }
+    }
+
+# Initialize sensor
+
+# Read sensor with calibration
+def read_sensor(mpu, config):
+    ax, ay, az = mpu.acceleration
+    gx, gy, gz = mpu.gyro
+    temp = mpu.temperature
+    
+    # Apply calibration if available
+    if config["calibration"]["calibrated"]:
+        ax += config["calibration"]["x_offset"]
+        ay += config["calibration"]["y_offset"]
+        az += config["calibration"]["z_offset"]
+    
+    return {
+        "acceleration": {"x": ax, "y": ay, "z": az},
+        "gyro": {"x": gx, "y": gy, "z": gz},
+        "temperature": temp
+    }
+
+# Background thread to continuously read sensor
+        sensor_data = read_sensor(mpu, config)
+        time.sleep(0.1)  # 10 Hz update rate
 
 # Routes
 @app.route('/')

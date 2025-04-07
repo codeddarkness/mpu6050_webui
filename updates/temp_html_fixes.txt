@@ -1,0 +1,5 @@
+                    document.getElementById('temp').textContent = data.temperature.toFixed(1);
+                    
+                    // Calculate Fahrenheit temperature
+                    const fahrenheit = (data.temperature * 9/5) + 32;
+                    document.getElementById('temp-f').textContent = fahrenheit.toFixed(1);

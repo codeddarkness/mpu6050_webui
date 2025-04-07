@@ -1,3 +1,140 @@
+#!/bin/bash
+# fix_all_issues.sh - Comprehensive fix for MPU6050 Monitor v1.0.1
+
+echo "Creating comprehensive fix for MPU6050 Monitor..."
+
+# 1. Fix mpu6050_monitor.py - Clean up duplications
+cat > mpu6050_monitor.py << 'EOT'
+#!/usr/bin/env python3
+# mpu6050_monitor.py - v1.0.1
+# Flask web server for MPU6050 sensor visualization
+
+from flask import Flask, render_template, jsonify, send_file, Response
+import json
+import os
+import threading
+import time
+import board
+import busio
+import adafruit_mpu6050
+
+app = Flask("mpu6050_web_server")
+
+# Global sensor data (updated by background thread)
+sensor_data = {
+    "acceleration": {"x": 0, "y": 0, "z": 0},
+    "gyro": {"x": 0, "y": 0, "z": 0},
+    "temperature": 0
+}
+
+# Load configuration
+def load_config():
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            return json.load(f)
+    return {
+        "data_file": "sensor_data.json",
+        "sample_rate": 0.1,
+        "calibration": {
+            "x_offset": 0,
+            "y_offset": 0,
+            "z_offset": 0,
+            "calibrated": False
+        }
+    }
+
+# Initialize sensor
+def init_sensor():
+    config = load_config()
+    try:
+        i2c = busio.I2C(board.SCL, board.SDA)
+        mpu = adafruit_mpu6050.MPU6050(i2c)
+        print("MPU6050 sensor initialized successfully")
+        return mpu, config
+    except Exception as e:
+        print(f"Error initializing sensor: {e}")
+        print("Check I2C connections and make sure MPU6050 is properly connected.")
+        return None, config
+
+# Read sensor with calibration
+def read_sensor(mpu, config):
+    ax, ay, az = mpu.acceleration
+    gx, gy, gz = mpu.gyro
+    temp = mpu.temperature
+    
+    # Apply calibration if available
+    if config["calibration"]["calibrated"]:
+        ax += config["calibration"]["x_offset"]
+        ay += config["calibration"]["y_offset"]
+        az += config["calibration"]["z_offset"]
+    
+    return {
+        "acceleration": {"x": ax, "y": ay, "z": az},
+        "gyro": {"x": gx, "y": gy, "z": gz},
+        "temperature": temp
+    }
+
+# Background thread to continuously read sensor
+def sensor_thread():
+    global sensor_data
+    mpu, config = init_sensor()
+    
+    if mpu is None:
+        print("WARNING: Sensor initialization failed. Using dummy data.")
+        # Return dummy data for testing
+        while True:
+            sensor_data = {
+                "acceleration": {"x": 0, "y": 0, "z": 9.8},
+                "gyro": {"x": 0, "y": 0, "z": 0},
+                "temperature": 25
+            }
+            time.sleep(0.1)
+    
+    while True:
+        try:
+            sensor_data = read_sensor(mpu, config)
+            time.sleep(0.1)  # 10 Hz update rate
+        except Exception as e:
+            print(f"Error reading sensor: {e}")
+            time.sleep(1)  # Retry after a longer delay
+
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/data')
+def get_data():
+    return jsonify(sensor_data)
+
+@app.route('/logdata')
+def get_log_data():
+    config = load_config()
+    try:
+        with open(config["data_file"], "r") as f:
+            return jsonify(json.load(f))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return jsonify({"readings": []})
+
+@app.route('/download')
+def download_data():
+    config = load_config()
+    return send_file(config["data_file"], as_attachment=True)
+
+if __name__ == '__main__':
+    # Start sensor reading in background thread
+    thread = threading.Thread(target=sensor_thread, daemon=True)
+    thread.start()
+    
+    # Start Flask server
+    print("Starting web server at http://0.0.0.0:5000")
+    app.run(host='0.0.0.0', port=5000, debug=False)
+EOT
+
+echo "Fixed mpu6050_monitor.py"
+
+# 2. Fix index.html - Clean up duplications
+cat > templates/index.html << 'EOT'
 <!-- templates/index.html - v1.0.1 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -328,3 +465,35 @@
     </script>
 </body>
 </html>
+EOT
+
+echo "Fixed templates/index.html"
+
+# Remove web_server.py since it's now merged with mpu6050_monitor.py
+echo "Moving web_server.py to backups/web_server.py.bak"
+mkdir -p backups
+mv web_server.py backups/web_server.py.bak
+
+# Create a restart script
+cat > restart.sh << 'EOT'
+#!/bin/bash
+# Restart the MPU6050 Monitor application
+
+# Kill any existing instances
+pkill -f "python3 mpu6050_monitor.py" || true
+echo "Killed existing processes"
+
+# Wait a moment
+sleep 1
+
+# Start the application
+echo "Starting MPU6050 Monitor..."
+python3 mpu6050_monitor.py
+
+echo "Application restarted!"
+EOT
+
+chmod +x restart.sh
+echo "Created restart script"
+
+echo "All fixes applied. Run './restart.sh' to restart the application."

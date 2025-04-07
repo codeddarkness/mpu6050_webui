@@ -1,4 +1,4 @@
-# MPU6050 Monitor System v1.0.0
+# MPU6050 Monitor System v1.0.1
 
 A comprehensive monitoring system for the MPU6050 accelerometer/gyroscope on Raspberry Pi Zero 2.
 
@@ -80,7 +80,7 @@ Copy
 
 ## Versioning
 
-- v1.0.0: Initial release with console and web interfaces
+- v1.0.1: Initial release with console and web interfaces
 
 ## License
 

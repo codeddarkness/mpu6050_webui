@@ -1,4 +1,4 @@
-<!-- templates/index.html - v1.0.1 -->
+<!-- templates/index.html - v1.0.0 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +15,7 @@
         }
         .container {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
@@ -27,8 +27,13 @@
             margin: 10px;
             padding: 15px;
         }
+        .data-panel {
+            flex: 1;
+            min-width: 300px;
+        }
         .visualization-panel {
-            width: 100%;
+            flex: 2;
+            min-width: 500px;
             height: 400px;
             position: relative;
         }
@@ -36,42 +41,22 @@
             width: 100%;
             height: 100%;
         }
-        .status-panel {
-            width: calc(100% - 20px);
-            padding: 10px;
-            margin: 10px;
-            background-color: #333;
-            color: white;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 14px;
-            overflow-x: auto;
-            white-space: nowrap;
-        }
-        .status-value {
-            display: inline-block;
-            min-width: 50px;
-            text-align: right;
-        }
-        .status-label {
-            font-weight: bold;
-            color: #aaa;
-        }
-        .status-section {
-            margin: 0 15px;
-            display: inline-block;
-        }
-        .status-section:first-child {
-            margin-left: 0;
-        }
-        .arrow {
-            font-weight: bold;
-            color: #4CAF50;
-        }
         h1 {
             margin-top: 0;
             color: #333;
             font-size: 1.5em;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .data-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .data-value {
+            font-family: monospace;
         }
         .button {
             background-color: #4CAF50;
@@ -89,42 +74,48 @@
         .button:hover {
             background-color: #45a049;
         }
-        .actions {
-            text-align: center;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="panel data-panel">
+            <h1>MPU6050 Sensor Data</h1>
+            <div class="data-row">
+                <span class="data-label">Acceleration X:</span>
+                <span class="data-value" id="acc-x">0.00</span> m/s²
+            </div>
+            <div class="data-row">
+                <span class="data-label">Acceleration Y:</span>
+                <span class="data-value" id="acc-y">0.00</span> m/s²
+            </div>
+            <div class="data-row">
+                <span class="data-label">Acceleration Z:</span>
+                <span class="data-value" id="acc-z">0.00</span> m/s²
+            </div>
+            <div class="data-row">
+                <span class="data-label">Gyroscope X:</span>
+                <span class="data-value" id="gyro-x">0.00</span> rad/s
+            </div>
+            <div class="data-row">
+                <span class="data-label">Gyroscope Y:</span>
+                <span class="data-value" id="gyro-y">0.00</span> rad/s
+            </div>
+            <div class="data-row">
+                <span class="data-label">Gyroscope Z:</span>
+                <span class="data-value" id="gyro-z">0.00</span> rad/s
+            </div>
+            <div class="data-row">
+                <span class="data-label">Temperature:</span>
+                <span class="data-value" id="temp">0.0</span> °C
+            </div>
+            <div style="margin-top: 20px;">
+                <a href="/download" class="button">Download Log Data</a>
+            </div>
+        </div>
+        
         <div class="panel visualization-panel">
-            <h1>MPU6050 3D Orientation</h1>
+            <h1>3D Orientation</h1>
             <div id="visualization"></div>
-        </div>
-        
-        <div class="status-panel" id="status-bar">
-            <span class="status-section">
-                <span class="status-label">Acceleration (m/s²)</span>
-                X: <span class="status-value" id="acc-x">0.00</span> <span class="arrow" id="acc-x-arrow">&lt;</span>
-                Y: <span class="status-value" id="acc-y">0.00</span> <span class="arrow" id="acc-y-arrow">^</span>
-                Z: <span class="status-value" id="acc-z">0.00</span> <span class="arrow" id="acc-z-arrow">&gt;</span>
-            </span>
-            <span class="status-section">|</span>
-            <span class="status-section">
-                <span class="status-label">Gyroscope (rad/s)</span>
-                X: <span class="status-value" id="gyro-x">0.00</span> <span class="arrow" id="gyro-x-arrow">v</span>
-                Y: <span class="status-value" id="gyro-y">0.00</span> <span class="arrow" id="gyro-y-arrow">^</span>
-                Z: <span class="status-value" id="gyro-z">0.00</span> <span class="arrow" id="gyro-z-arrow">&gt;</span>
-            </span>
-            <span class="status-section">|</span>
-            <span class="status-section">
-                <span class="status-label">Temperature</span>
-                <span class="status-value" id="temp">0.0</span> °C / <span class="status-value" id="temp-f">32.0</span> °F
-            </span>
-        </div>
-        
-        <div class="actions">
-            <a href="/download" class="button">Download Log Data</a>
         </div>
     </div>
 
@@ -200,19 +191,6 @@
         const accelData = { x: 0, y: 0, z: 0 };
         let lastTimestamp = null;
         
-        // Helper function to determine arrow direction
-        function getArrow(value, threshold = 0.3) {
-            if (value > threshold) return '&gt;'; // >
-            if (value < -threshold) return '&lt;'; // 
-            return '•';
-        }
-        
-        function getVerticalArrow(value, threshold = 0.3) {
-            if (value > threshold) return '^';
-            if (value < -threshold) return 'v';
-            return '•';
-        }
-        
         // Data update function
         function updateData() {
             fetch('/data')
@@ -226,18 +204,6 @@
                     document.getElementById('gyro-y').textContent = data.gyro.y.toFixed(2);
                     document.getElementById('gyro-z').textContent = data.gyro.z.toFixed(2);
                     document.getElementById('temp').textContent = data.temperature.toFixed(1);
-                    
-                    // Calculate Fahrenheit temperature
-                    const fahrenheit = (data.temperature * 9/5) + 32;
-                    document.getElementById('temp-f').textContent = fahrenheit.toFixed(1);
-                    
-                    // Update arrows
-                    document.getElementById('acc-x-arrow').innerHTML = getArrow(data.acceleration.x);
-                    document.getElementById('acc-y-arrow').innerHTML = getVerticalArrow(data.acceleration.y);
-                    document.getElementById('acc-z-arrow').innerHTML = getArrow(data.acceleration.z);
-                    document.getElementById('gyro-x-arrow').innerHTML = getVerticalArrow(data.gyro.x);
-                    document.getElementById('gyro-y-arrow').innerHTML = getVerticalArrow(data.gyro.y);
-                    document.getElementById('gyro-z-arrow').innerHTML = getArrow(data.gyro.z);
                     
                     // Update sensor data for 3D model orientation
                     gyroData.x = data.gyro.x;

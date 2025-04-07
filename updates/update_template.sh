@@ -1,3 +1,14 @@
+#!/bin/bash
+# update_template.sh - Creates backup and updates index.html
+
+# Create backup
+cp templates/index.html templates/index.html.bak
+
+# Update version in comment
+sed -i '1s/v1.0.0/v1.0.1/' templates/index.html
+
+# Create a new template file
+cat > templates/new_index.html << 'EOT'
 <!-- templates/index.html - v1.0.1 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -119,7 +130,8 @@
             <span class="status-section">|</span>
             <span class="status-section">
                 <span class="status-label">Temperature</span>
-                <span class="status-value" id="temp">0.0</span> °C / <span class="status-value" id="temp-f">32.0</span> °F
+                <span class="status-value" id="temp">0.0</span> °C /
+                <span class="status-value" id="temp-f">32.0</span> °F
             </span>
         </div>
         
@@ -328,3 +340,9 @@
     </script>
 </body>
 </html>
+EOT
+
+# Replace the template file
+mv templates/new_index.html templates/index.html
+
+echo "templates/index.html updated to v1.0.1"
