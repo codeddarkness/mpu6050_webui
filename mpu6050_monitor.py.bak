@@ -161,7 +161,7 @@ return " "
 
 def calibrate_sensor(mpu):
     """Calibrate by taking 100 readings and finding average offset"""
-        print("Exiting...")
+        print("\nExiting...")
     x_vals, y_vals, z_vals = [], [], []
 
     # Collect samples
@@ -181,7 +181,7 @@ def calibrate_sensor(mpu):
     config["calibration"]["calibrated"] = True
 
     save_config(config)
-        print("Exiting...")
+        print("\nExiting...")
     return config
 
 def sensor_thread():
@@ -274,9 +274,9 @@ def run_console_mode(mpu, config):
             os.system('clear')
 
             # Display header
-        print("Exiting...")
-        print("Exiting...")
-        print("Exiting...")
+        print("\nExiting...")
+        print("\nExiting...")
+        print("\nExiting...")
 
             # One line status display
             print(f"║ Acc(m/s²) X:{ax:7.2f}{acc_x_arrow} Y:{ay:7.2f}{acc_y_arrow} Z:{az:7.2f}{acc_z_arrow} | ", end='')
@@ -284,13 +284,13 @@ def run_console_mode(mpu, config):
             print(f"T:{temp:5.1f}°C/{temp_f:5.1f}°F ║")
 
             # Additional info
-        print("Exiting...")
+        print("\nExiting...")
             print(f"║ Direction: {overall_direction}                             ║")
             print(f"║ Web Interface: http://localhost:5000             ║")
             print(f"║ API: http://localhost:5000/api/v1/data           ║")
-        print("Exiting...")
-        print("Exiting...")
-        print("Exiting...")
+        print("\nExiting...")
+        print("\nExiting...")
+        print("\nExiting...")
 
             # Check for keypresses with timeout
             rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
@@ -311,15 +311,15 @@ def run_console_mode(mpu, config):
     finally:
         # Restore terminal settings
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        print("Exiting...")
-        print("Exiting...")
+        print("\nExiting...")
+Exiting...")
 
 
 def signal_handler(sig, frame):
 """Handle Ctrl+C"""
 global running
 running = False
-        print("Exiting...")
+print("\nExiting...")
 sys.exit(0)
 
 # Flask routes
@@ -447,7 +447,7 @@ run_console_mode(mpu, config)
 
 # Cleanup
 running = False
-        print("Exiting...")
+print("\nExiting...")
 
 if __name__ == "__main__":
 main()

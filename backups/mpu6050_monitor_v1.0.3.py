@@ -247,7 +247,7 @@ def run_console_mode(mpu, config):
             # Get sensor data
             data = sensor_data
             
-            # Extract data for display
+            # Get direction arrows
             ax = data["acceleration"]["x"]
             ay = data["acceleration"]["y"]
             az = data["acceleration"]["z"]
@@ -270,50 +270,46 @@ def run_console_mode(mpu, config):
             
             overall_direction = get_direction_arrow(ax, ay)
             
-            # Prepare screen content
-            screen_content = f"""╔══════════════════════════════════════════════════════╗
-║               MPU6050 MONITOR v1.0.3                 ║
-╠══════════════════════════════════════════════════════╣
-║ Acc(m/s²) X:{ax:7.2f}{acc_x_arrow} Y:{ay:7.2f}{acc_y_arrow} Z:{az:7.2f}{acc_z_arrow} | Gyro X:{gx:6.2f}{gyro_x_arrow} Y:{gy:6.2f}{gyro_y_arrow} Z:{gz:6.2f}{gyro_z_arrow} | T:{temp:5.1f}°C/{temp_f:5.1f}°F ║
-╠══════════════════════════════════════════════════════╣
-║ Direction: {overall_direction}                             ║
-║ Web Interface: http://localhost:5000             ║
-║ API: http://localhost:5000/api/v1/data           ║
-╠══════════════════════════════════════════════════════╣
-║ [c] Calibrate  [q] Quit              ║
-╚══════════════════════════════════════════════════════╝"""
-            
-            # Clear screen and print content
+            # Clear screen
             os.system('clear')
-            print(screen_content, end='', flush=True)
+            
+            # Display header
+            print("╔══════════════════════════════════════════════════════╗")
+            print("║               MPU6050 MONITOR v1.0.3                 ║")
+            print("╠══════════════════════════════════════════════════════╣")
+            
+            # One line status display
+            print(f"║ Acc(m/s²) X:{ax:7.2f}{acc_x_arrow} Y:{ay:7.2f}{acc_y_arrow} Z:{az:7.2f}{acc_z_arrow} | ", end='')
+            print(f"Gyro X:{gx:6.2f}{gyro_x_arrow} Y:{gy:6.2f}{gyro_y_arrow} Z:{gz:6.2f}{gyro_z_arrow} | ", end='')
+            print(f"T:{temp:5.1f}°C/{temp_f:5.1f}°F ║")
+            
+            # Additional info
+            print("╠══════════════════════════════════════════════════════╣")
+            print(f"║ Direction: {overall_direction}                             ║")
+            print(f"║ Web Interface: http://localhost:5000             ║")
+            print(f"║ API: http://localhost:5000/api/v1/data           ║")
+            print("╠══════════════════════════════════════════════════════╣")
+            print("║ [c] Calibrate  [q] Quit              ║")
+            print("╚══════════════════════════════════════════════════════╝")
             
             # Check for keypresses with timeout
-            try:
-                rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
-                if rlist:
-                    key = sys.stdin.read(1)
-                    if key.lower() == 'q':
-                        running = False
-                        break
-                    elif key.lower() == 'c':
-                        # Reset terminal settings before calibrating
-                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-                        calibrate_sensor(mpu)
-                        # Set terminal back to raw mode
-                        tty.setraw(sys.stdin.fileno())
-            except Exception as e:
-                print(f"Input error: {e}")
+            if select.select([sys.stdin], [], [], 0.1)[0]:  # 100ms timeout
+                key = sys.stdin.read(1)
+                if key.lower() == 'q':
+                    running = False
+                    break
+                elif key.lower() == 'c':
+                    # Reset terminal settings before calibrating
+                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                    calibrate_sensor(mpu)
+                    # Set terminal back to raw mode
+                    tty.setraw(sys.stdin.fileno())
             
             time.sleep(0.2)  # Slower refresh rate to reduce flicker
             
-    except Exception as e:
-        print(f"Console mode error: {e}")
     finally:
-        # Always restore terminal settings
-        try:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-        except:
-            pass
+        # Restore terminal settings
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
         print("\nExiting...")
 
 def signal_handler(sig, frame):
@@ -398,18 +394,18 @@ def api_calibrate():
     })
 
 def start_web_server():
-        """Start the Flask web server"""
-        # Configure logging to file only for werkzeug
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)  # Only log errors
-        file_handler = logging.FileHandler('web_server.log')
-        file_handler.setLevel(logging.ERROR)
-        log.addHandler(file_handler)
-        log.disabled = True  # Disable console output
-        
-        # Start the server
-        logger.info("Starting web server at http://0.0.0.0:5000")
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    """Start the Flask web server"""
+    # Configure logging to file only for werkzeug
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)  # Only log errors
+    file_handler = logging.FileHandler('web_server.log')
+    file_handler.setLevel(logging.ERROR)
+    log.addHandler(file_handler)
+    log.disabled = True  # Disable console output
+    
+    # Start the server
+    logger.info("Starting web server at http://0.0.0.0:5000")
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
 def main():
     """Main function"""
