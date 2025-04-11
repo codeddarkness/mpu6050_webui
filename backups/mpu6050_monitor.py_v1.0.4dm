@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# mpu6050_monitor.py - v1.0.3
+# mpu6050_monitor.py - v1.0.4
 # Console monitor for MPU6050 sensor with web interface
 
 import time
@@ -125,7 +125,7 @@ def save_data(data, config):
     # Add new data and save
     if "readings" not in existing_data:
         existing_data["readings"] = []
-        
+    
     existing_data["readings"].append(data)
     
     # Save with proper formatting
@@ -227,27 +227,29 @@ def sensor_thread():
             logger.error(f"Error reading sensor: {e}")
             time.sleep(1)  # Retry after a longer delay
 
+#######################################
 def run_console_mode(mpu, config):
     """Run in console mode showing sensor data"""
     global running
     
-    # Prepare for non-blocking key input
-    import tty
-    import termios
+    # Import here to avoid potential circular import
     import select
     import sys
+    import termios
+    import tty
     
-    # Save terminal settings
+    # Save original terminal settings
     old_settings = termios.tcgetattr(sys.stdin)
+    
     try:
-        # Set terminal to raw mode
+        # Set terminal to raw mode to better handle keypresses
         tty.setraw(sys.stdin.fileno())
         
         while running:
             # Get sensor data
             data = sensor_data
             
-            # Extract data for display
+            # Get direction arrows
             ax = data["acceleration"]["x"]
             ay = data["acceleration"]["y"]
             az = data["acceleration"]["z"]
@@ -270,58 +272,69 @@ def run_console_mode(mpu, config):
             
             overall_direction = get_direction_arrow(ax, ay)
             
-            # Prepare screen content
-            screen_content = f"""╔══════════════════════════════════════════════════════╗
-║               MPU6050 MONITOR v1.0.3                 ║
-╠══════════════════════════════════════════════════════╣
-║ Acc(m/s²) X:{ax:7.2f}{acc_x_arrow} Y:{ay:7.2f}{acc_y_arrow} Z:{az:7.2f}{acc_z_arrow} | Gyro X:{gx:6.2f}{gyro_x_arrow} Y:{gy:6.2f}{gyro_y_arrow} Z:{gz:6.2f}{gyro_z_arrow} | T:{temp:5.1f}°C/{temp_f:5.1f}°F ║
-╠══════════════════════════════════════════════════════╣
-║ Direction: {overall_direction}                             ║
-║ Web Interface: http://localhost:5000             ║
-║ API: http://localhost:5000/api/v1/data           ║
-╠══════════════════════════════════════════════════════╣
-║ [c] Calibrate  [q] Quit              ║
-╚══════════════════════════════════════════════════════╝"""
+            # Prepare display in a buffer to avoid flicker
+            output = []
+            output.append("╔════════════════════════════════════════════════════════════╗")
+            output.append("║               MPU6050 MONITOR v1.0.4                       ║")
+            output.append("╠════════════════════════════════════════════════════════════╣")
+            output.append(f"║ Accel(m/s²) X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow} | Gyro(rad/s) X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow} | Temp: {temp:5.1f}°C / {temp_f:5.1f}°F ║")
+            output.append("╠════════════════════════════════════════════════════════════╣")
+            output.append(f"║ Direction: {overall_direction}                                               ║")
+            output.append(f"║ Web Interface: http://localhost:5000                       ║")
+            output.append("╠════════════════════════════════════════════════════════════╣")
+            output.append("║ [c] Calibrate  [q] Quit                                    ║")
+            output.append("╚════════════════════════════════════════════════════════════╝")
             
-            # Clear screen and print content
+            # Clear screen first
             os.system('clear')
-            print(screen_content, end='', flush=True)
             
-            # Check for keypresses with timeout
-            try:
-                rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
-                if rlist:
-                    key = sys.stdin.read(1)
-                    if key.lower() == 'q':
-                        running = False
-                        break
-                    elif key.lower() == 'c':
-                        # Reset terminal settings before calibrating
-                        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-                        calibrate_sensor(mpu)
-                        # Set terminal back to raw mode
-                        tty.setraw(sys.stdin.fileno())
-            except Exception as e:
-                print(f"Input error: {e}")
+            # Print entire display at once to avoid formatting issues
+            print("\n".join(output))
             
-            time.sleep(0.2)  # Slower refresh rate to reduce flicker
+            # Use select with a short timeout to allow for responsive exit
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if rlist:
+                key = sys.stdin.read(1)
+                if key.lower() == 'q':
+                    break
+                elif key.lower() == 'c':
+                    # Reset terminal to normal mode for calibration
+                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                    calibrate_sensor(mpu)
+                    # Set back to raw mode after calibration
+                    tty.setraw(sys.stdin.fileno())
+            
+            # Reduce flicker by using a slightly longer sleep
+            time.sleep(0.05)  # 50ms refresh rate
             
     except Exception as e:
-        print(f"Console mode error: {e}")
+        logger.error(f"Console mode error: {e}")
     finally:
         # Always restore terminal settings
         try:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            print("\nExiting console mode...")
         except:
             pass
-        print("\nExiting...")
+    
+    # Ensure global running flag is set to False
+    running = False
 
 def signal_handler(sig, frame):
-    """Handle Ctrl+C"""
+    """Handle Ctrl+C with improved safety"""
     global running
-    running = False
-    print("\nShutting down...")
-    sys.exit(0)
+    
+    # Avoid nested prints or repeated calls
+    if running:
+        running = False
+        sys.stdout.write("\nInterrupted. Shutting down...\n")
+        sys.stdout.flush()
+        
+        # Attempt a clean exit
+        try:
+            sys.exit(0)
+        except:
+            pass
 
 # Flask routes
 @app.route('/')
@@ -351,7 +364,7 @@ def download_data():
 def api_get_data():
     """API endpoint to get current sensor data"""
     return jsonify({
-        "version": "1.0.3",
+        "version": "1.0.4",
         "timestamp": datetime.now().isoformat(),
         "data": sensor_data
     })
@@ -361,7 +374,7 @@ def api_get_status():
     """API endpoint to get system status"""
     config = load_config()
     return jsonify({
-        "version": "1.0.3",
+        "version": "1.0.4",
         "uptime": time.time() - start_time,
         "calibrated": config["calibration"]["calibrated"],
         "sample_rate": config["sample_rate"],
@@ -398,18 +411,18 @@ def api_calibrate():
     })
 
 def start_web_server():
-        """Start the Flask web server"""
-        # Configure logging to file only for werkzeug
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)  # Only log errors
-        file_handler = logging.FileHandler('web_server.log')
-        file_handler.setLevel(logging.ERROR)
-        log.addHandler(file_handler)
-        log.disabled = True  # Disable console output
-        
-        # Start the server
-        logger.info("Starting web server at http://0.0.0.0:5000")
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    """Start the Flask web server"""
+    # Configure logging to file only for werkzeug
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)  # Only log errors
+    file_handler = logging.FileHandler('web_server.log')
+    file_handler.setLevel(logging.ERROR)
+    log.addHandler(file_handler)
+    log.disabled = True  # Disable console output
+    
+    # Start the server
+    logger.info("Starting web server at http://0.0.0.0:5000")
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
 def main():
     """Main function"""
@@ -420,17 +433,17 @@ def main():
     parser.add_argument('--web-only', action='store_true', help='Run in web mode only (no console)')
     parser.add_argument('--console-only', action='store_true', help='Run in console mode only (no web server)')
     args = parser.parse_args()
-    
+
     # Set up signal handler for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     # Initialize sensor
     mpu, config = init_sensor()
-    
+
     # Start sensor reading thread
     sensor_daemon = threading.Thread(target=sensor_thread, daemon=True)
     sensor_daemon.start()
-    
+
     # Start based on mode
     if args.web_only:
         # Web server only
@@ -442,13 +455,13 @@ def main():
         # Both console and web server
         web_thread = threading.Thread(target=start_web_server, daemon=True)
         web_thread.start()
-        
+
         # Run console in main thread
         run_console_mode(mpu, config)
-    
+
     # Cleanup
     running = False
-    print("Exiting MPU6050 Monitor...")
+    print("\nExiting MPU6050 Monitor...")
 
 if __name__ == "__main__":
     main()

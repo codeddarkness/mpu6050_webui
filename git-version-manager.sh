@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 
 # Function to update version in files
 update_version_in_files() {
-    local new_version=$1
+    local new_version=${1/^v/}
     
     # Update version in Python script
     sed -i "s/# Console monitor for MPU6050 sensor.*$/# Console monitor for MPU6050 sensor with web interface - v${new_version}/" mpu6050_monitor.py

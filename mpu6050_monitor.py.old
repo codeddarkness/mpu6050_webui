@@ -277,8 +277,8 @@ def run_text_console_mode(mpu, config):
             # Simple output without borders
             print("MPU6050 MONITOR vv1.0.5 - TEXT MODE")
             print("---------------------------------")
-            print(f"Acceleration (m/s²): X: {ax:7.2f} {acc_x_arrow} Y: {ay:7.2f} {acc_y_arrow} Z: {az:7.2f} {acc_z_arrow}")
-            print(f"Gyroscope (rad/s):   X: {gx:7.2f} {gyro_x_arrow} Y: {gy:7.2f} {gyro_y_arrow} Z: {gz:7.2f} {gyro_z_arrow}")
+            print(f"Acceleration (m/s²): X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow}")
+            print(f"Gyroscope (rad/s):   X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow}")
             print(f"Temperature:         {temp:5.1f}°C / {temp_f:5.1f}°F")
             print(f"Direction:           {overall_direction}")
             print("---------------------------------")

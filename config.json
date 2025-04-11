@@ -2,9 +2,9 @@
     "data_file": "sensor_data.json",
     "sample_rate": 0.1,
     "calibration": {
-        "x_offset": -0.2332670677490233,
-        "y_offset": -2.8024369852294932,
-        "z_offset": 0.8054871451416029,
+        "x_offset": -0.6104017132568358,
+        "y_offset": -8.085865440795896,
+        "z_offset": 4.864377219604495,
         "calibrated": true
     }
 }

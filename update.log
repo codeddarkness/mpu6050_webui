@@ -1,6 +1,85 @@
+#!/bin/bash
+# text_console_fix.sh - Add text-only console mode to MPU6050 Monitor
+
+# Create a backup of the original files
+echo "Creating backups of original files..."
++ echo 'Creating backups of original files...'
+Creating backups of original files...
+cp mpu6050_monitor.py mpu6050_monitor.py.bak
++ cp mpu6050_monitor.py mpu6050_monitor.py.bak
+cp restart.sh restart.sh.bak
++ cp restart.sh restart.sh.bak
+
+# Update restart.sh first
+echo "Updating restart.sh with new console mode options..."
++ echo 'Updating restart.sh with new console mode options...'
+Updating restart.sh with new console mode options...
+cat > restart.sh << 'EOF'
+#!/bin/bash
+# restart.sh - Restart MPU6050 Monitor
+
+# Kill any existing instances
+pkill -f "python3 mpu6050_monitor.py" || true
+echo "Killed existing processes"
+
+# Wait a moment
+sleep 1
+
+# Start the application in the desired mode
+echo "Starting MPU6050 Monitor..."
+
+# Choose the mode
+PS3="Select mode: "
+options=("Console + Web" "Console(text) + Web" "Web only" "Console only" "Console(text) only" "Cancel")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "Console + Web")
+            echo "Starting in combined mode..."
+            python3 mpu6050_monitor.py
+            break
+            ;;
+        "Console(text) + Web")
+            echo "Starting in text console with web mode..."
+            python3 mpu6050_monitor.py --text-console
+            break
+            ;;
+        "Web only")
+            echo "Starting in web-only mode..."
+            python3 mpu6050_monitor.py --web-only &
+            echo "Web server running at http://localhost:5000"
+            break
+            ;;
+        "Console only")
+            echo "Starting in console-only mode..."
+            python3 mpu6050_monitor.py --console-only
+            break
+            ;;
+        "Console(text) only")
+            echo "Starting in text-only console mode..."
+            python3 mpu6050_monitor.py --text-only
+            break
+            ;;
+        "Cancel")
+            echo "Startup cancelled"
+            break
+            ;;
+        *)
+            echo "Invalid option $REPLY"
+            ;;
+    esac
+done
+EOF
++ cat
+
+# Now completely replace the MPU6050 monitor file with a corrected version
+echo "Creating updated mpu6050_monitor.py with text-only console mode..."
++ echo 'Creating updated mpu6050_monitor.py with text-only console mode...'
+Creating updated mpu6050_monitor.py with text-only console mode...
+cat > mpu6050_monitor.py << 'EOF'
 #!/usr/bin/env python3
 # mpu6050_monitor.py - v1.0.4
-# Console monitor for MPU6050 sensor with web interface - vv1.0.5
+# Console monitor for MPU6050 sensor with web interface
 
 import time
 import json
@@ -275,10 +354,10 @@ def run_text_console_mode(mpu, config):
             print("\033[H\033[J", end="")
             
             # Simple output without borders
-            print("MPU6050 MONITOR vv1.0.5 - TEXT MODE")
+            print("MPU6050 MONITOR v1.0.4 - TEXT MODE")
             print("---------------------------------")
-            print(f"Acceleration (m/s²): X: {ax:7.2f} {acc_x_arrow} Y: {ay:7.2f} {acc_y_arrow} Z: {az:7.2f} {acc_z_arrow}")
-            print(f"Gyroscope (rad/s):   X: {gx:7.2f} {gyro_x_arrow} Y: {gy:7.2f} {gyro_y_arrow} Z: {gz:7.2f} {gyro_z_arrow}")
+            print(f"Acceleration (m/s²): X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow}")
+            print(f"Gyroscope (rad/s):   X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow}")
             print(f"Temperature:         {temp:5.1f}°C / {temp_f:5.1f}°F")
             print(f"Direction:           {overall_direction}")
             print("---------------------------------")
@@ -362,7 +441,7 @@ def run_console_mode(mpu, config):
             # Prepare display in a buffer to avoid flicker
             output = []
             output.append("╔════════════════════════════════════════════════════════════╗")
-            output.append("║               MPU6050 MONITOR vv1.0.5                       ║")
+            output.append("║               MPU6050 MONITOR v1.0.4                       ║")
             output.append("╠════════════════════════════════════════════════════════════╣")
             output.append(f"║ Accel(m/s²) X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow} | Gyro(rad/s) X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow} | Temp: {temp:5.1f}°C / {temp_f:5.1f}°F ║")
             output.append("╠════════════════════════════════════════════════════════════╣")
@@ -564,3 +643,42 @@ def main():
 
 if __name__ == "__main__":
     main()
+EOF
++ cat
+
+echo "Fix complete! New text-only console options have been added."
++ echo 'Fix complete! New text-only console options have been added.'
+Fix complete! New text-only console options have been added.
+echo ""
++ echo ''
+
+echo "Changes:"
++ echo Changes:
+Changes:
+echo "1. Added text-only console mode without fancy borders"
++ echo '1. Added text-only console mode without fancy borders'
+1. Added text-only console mode without fancy borders
+echo "2. Added two new startup options in restart.sh:"
++ echo '2. Added two new startup options in restart.sh:'
+2. Added two new startup options in restart.sh:
+echo "   - Console(text) + Web: Text console with web server"
++ echo '   - Console(text) + Web: Text console with web server'
+   - Console(text) + Web: Text console with web server
+echo "   - Console(text) only: Text-only console mode"
++ echo '   - Console(text) only: Text-only console mode'
+   - Console(text) only: Text-only console mode
+echo ""
++ echo ''
+
+echo "The text mode uses simpler terminal control codes that should work better"
++ echo 'The text mode uses simpler terminal control codes that should work better'
+The text mode uses simpler terminal control codes that should work better
+echo "in problematic terminal environments like iTerm."
++ echo 'in problematic terminal environments like iTerm.'
+in problematic terminal environments like iTerm.
+echo ""
++ echo ''
+
+echo "To try the new modes, run ./restart.sh and select one of the new options."
++ echo 'To try the new modes, run ./restart.sh and select one of the new options.'
+To try the new modes, run ./restart.sh and select one of the new options.

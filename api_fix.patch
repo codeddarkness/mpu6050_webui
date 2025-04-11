@@ -1,0 +1,30 @@
+--- mpu6050_monitor.py    2025-04-10 12:00:00.000000000 +0000
++++ mpu6050_monitor.py.new    2025-04-10 12:00:00.000000000 +0000
+@@ -517,16 +517,21 @@
+ @app.route('/api/v1/log')
+ def api_get_log():
+     """API endpoint to get logged data"""
++    logger.info("API call: /api/v1/log")
+     config = load_config()
+     try:
+-        with open(config["data_file"], "r") as f:
+-            content = f.read().strip()
+-            if content:
+-                return jsonify(json.loads(content))
+-            else:
+-                return jsonify({"readings": []})
+-    except (FileNotFoundError, json.JSONDecodeError):
+-        return jsonify({"readings": []})
++        # Check if file exists before trying to open it
++        if os.path.exists(config["data_file"]):
++            with open(config["data_file"], "r") as f:
++                content = f.read().strip()
++                if content:
++                    return jsonify(json.loads(content))
++                else:
++                    return jsonify({"readings": []})
++        else:
++            return jsonify({"readings": [], "status": "no_data_file"})
++    except Exception as e:
++        logger.error(f"Error in API /api/v1/log: {e}")
++        return jsonify({"readings": [], "error": str(e), "status": "error"})
