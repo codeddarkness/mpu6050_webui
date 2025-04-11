@@ -16,7 +16,7 @@ from datetime import datetime
 import board
 import busio
 import adafruit_mpu6050
-from flask import Flask, render_template, jsonify, send_file, Response
+from flask import Flask, request, render_template, jsonify, send_file, Response
 
 # Setup logging
 logging.basicConfig(
