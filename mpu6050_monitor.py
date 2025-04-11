@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# mpu6050_monitor.py - v1.0.3
+# mpu6050_monitor.py - v1.0.4
 # Console monitor for MPU6050 sensor with web interface
 
 import time
@@ -227,12 +227,111 @@ def sensor_thread():
             logger.error(f"Error reading sensor: {e}")
             time.sleep(1)  # Retry after a longer delay
 
+def run_text_console_mode(mpu, config):
+    """Run in text-only console mode showing sensor data without fancy formatting"""
+    global running
+    
+    # Import here to avoid potential circular import
+    import select
+    import sys
+    import termios
+    import tty
+    
+    # Save original terminal settings
+    old_settings = termios.tcgetattr(sys.stdin)
+    
+    try:
+        # Set terminal to raw mode to better handle keypresses
+        tty.setraw(sys.stdin.fileno())
+        
+        while running:
+            # Get sensor data
+            data = sensor_data
+            
+            # Get values
+            ax = data["acceleration"]["x"]
+            ay = data["acceleration"]["y"]
+            az = data["acceleration"]["z"]
+            
+            gx = data["gyro"]["x"]
+            gy = data["gyro"]["y"]
+            gz = data["gyro"]["z"]
+            
+            temp = data["temperature"]
+            temp_f = (temp * 9/5) + 32
+            
+            # Direction arrows
+            acc_x_arrow = get_horizontal_arrow(ax)
+            acc_y_arrow = get_vertical_arrow(ay)
+            acc_z_arrow = get_horizontal_arrow(az)
+            
+            gyro_x_arrow = get_vertical_arrow(gx)
+            gyro_y_arrow = get_vertical_arrow(gy)
+            gyro_z_arrow = get_horizontal_arrow(gz)
+            
+            overall_direction = get_direction_arrow(ax, ay)
+            
+            # Clear screen with less aggressive technique
+            print("\033[H\033[J", end="")
+            
+            # Simple output without borders
+            print("MPU6050 MONITOR v1.0.4 - TEXT MODE")
+            print("---------------------------------")
+            print(f"Acceleration (m/s²): X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow}")
+            print(f"Gyroscope (rad/s):   X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow}")
+            print(f"Temperature:         {temp:5.1f}°C / {temp_f:5.1f}°F")
+            print(f"Direction:           {overall_direction}")
+            print("---------------------------------")
+            print("Web Interface: http://localhost:5000")
+            print("[c] Calibrate  [q] Quit")
+            
+            # Use select with a short timeout to allow for responsive exit
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if rlist:
+                key = sys.stdin.read(1)
+                if key.lower() == "q":
+                    break
+                elif key.lower() == "c":
+                    # Reset terminal to normal mode for calibration
+                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                    calibrate_sensor(mpu)
+                    # Set back to raw mode after calibration
+                    tty.setraw(sys.stdin.fileno())
+            
+            # Short sleep time for responsive updates
+            time.sleep(0.05)
+            
+    except Exception as e:
+        logger.error(f"Text console mode error: {e}")
+    finally:
+        # Always restore terminal settings
+        try:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            print("\nExiting text console mode...")
+        except:
+            pass
+    
+    # Ensure global running flag is set to False
+    running = False
+
 #######################################
 def run_console_mode(mpu, config):
     """Run in console mode showing sensor data"""
     global running
     
+    # Import here to avoid potential circular import
+    import select
+    import sys
+    import termios
+    import tty
+    
+    # Save original terminal settings
+    old_settings = termios.tcgetattr(sys.stdin)
+    
     try:
+        # Set terminal to raw mode to better handle keypresses
+        tty.setraw(sys.stdin.fileno())
+        
         while running:
             # Get sensor data
             data = sensor_data
@@ -260,55 +359,69 @@ def run_console_mode(mpu, config):
             
             overall_direction = get_direction_arrow(ax, ay)
             
-            # Clear screen
+            # Prepare display in a buffer to avoid flicker
+            output = []
+            output.append("╔════════════════════════════════════════════════════════════╗")
+            output.append("║               MPU6050 MONITOR v1.0.4                       ║")
+            output.append("╠════════════════════════════════════════════════════════════╣")
+            output.append(f"║ Accel(m/s²) X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow} | Gyro(rad/s) X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow} | Temp: {temp:5.1f}°C / {temp_f:5.1f}°F ║")
+            output.append("╠════════════════════════════════════════════════════════════╣")
+            output.append(f"║ Direction: {overall_direction}                                               ║")
+            output.append(f"║ Web Interface: http://localhost:5000                       ║")
+            output.append("╠════════════════════════════════════════════════════════════╣")
+            output.append("║ [c] Calibrate  [q] Quit                                    ║")
+            output.append("╚════════════════════════════════════════════════════════════╝")
+            
+            # Clear screen first
             os.system('clear')
             
-            # Display header
-            print("╔════════════════════════════════════════════════════════════╗")
-            print("║               MPU6050 MONITOR v1.0.3                       ║")
-            print("╠════════════════════════════════════════════════════════════╣")
+            # Print entire display at once to avoid formatting issues
+            print("\n".join(output))
             
-            # One line status display as requested
-            print(f"║ Accel(m/s²) X: {ax:6.2f}{acc_x_arrow} Y: {ay:6.2f}{acc_y_arrow} Z: {az:6.2f}{acc_z_arrow} | ", end='')
-            print(f"Gyro(rad/s) X: {gx:6.2f}{gyro_x_arrow} Y: {gy:6.2f}{gyro_y_arrow} Z: {gz:6.2f}{gyro_z_arrow} | ", end='')
-            print(f"Temp: {temp:5.1f}°C / {temp_f:5.1f}°F ║")
-            
-            # Additional info
-            print("╠════════════════════════════════════════════════════════════╣")
-            print(f"║ Direction: {overall_direction}                                               ║")
-            print(f"║ Web Interface: http://localhost:5000                       ║")
-            print("╠════════════════════════════════════════════════════════════╣")
-            print("║ [c] Calibrate  [q] Quit                                    ║")
-            print("╚════════════════════════════════════════════════════════════╝")
-            
-            # Wait for keypress with timeout
-            import select
-            import sys
-            
-            # Check for keypresses (non-blocking)
-            if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+            # Use select with a short timeout to allow for responsive exit
+            rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if rlist:
                 key = sys.stdin.read(1)
                 if key.lower() == 'q':
-                    running = False
                     break
                 elif key.lower() == 'c':
+                    # Reset terminal to normal mode for calibration
+                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
                     calibrate_sensor(mpu)
+                    # Set back to raw mode after calibration
+                    tty.setraw(sys.stdin.fileno())
             
-            time.sleep(config["sample_rate"])
+            # Reduce flicker by using a slightly longer sleep
+            time.sleep(0.05)  # 50ms refresh rate
             
-    except KeyboardInterrupt:
-        running = False
-        print("\nExiting...")
-
-#######################################
-
+    except Exception as e:
+        logger.error(f"Console mode error: {e}")
+    finally:
+        # Always restore terminal settings
+        try:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            print("\nExiting console mode...")
+        except:
+            pass
+    
+    # Ensure global running flag is set to False
+    running = False
 
 def signal_handler(sig, frame):
-    """Handle Ctrl+C"""
+    """Handle Ctrl+C with improved safety"""
     global running
-    running = False
-    print("\nShutting down...")
-    sys.exit(0)
+    
+    # Avoid nested prints or repeated calls
+    if running:
+        running = False
+        sys.stdout.write("\nInterrupted. Shutting down...\n")
+        sys.stdout.flush()
+        
+        # Attempt a clean exit
+        try:
+            sys.exit(0)
+        except:
+            pass
 
 # Flask routes
 @app.route('/')
@@ -338,7 +451,7 @@ def download_data():
 def api_get_data():
     """API endpoint to get current sensor data"""
     return jsonify({
-        "version": "1.0.3",
+        "version": "1.0.4",
         "timestamp": datetime.now().isoformat(),
         "data": sensor_data
     })
@@ -348,7 +461,7 @@ def api_get_status():
     """API endpoint to get system status"""
     config = load_config()
     return jsonify({
-        "version": "1.0.3",
+        "version": "1.0.4",
         "uptime": time.time() - start_time,
         "calibrated": config["calibration"]["calibrated"],
         "sample_rate": config["sample_rate"],
@@ -403,9 +516,11 @@ def main():
     global running
     
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='MPU6050 Monitor')
-    parser.add_argument('--web-only', action='store_true', help='Run in web mode only (no console)')
-    parser.add_argument('--console-only', action='store_true', help='Run in console mode only (no web server)')
+    parser = argparse.ArgumentParser(description="MPU6050 Monitor")
+    parser.add_argument("--web-only", action="store_true", help="Run in web mode only (no console)")
+    parser.add_argument("--console-only", action="store_true", help="Run in console mode only (no web server)")
+    parser.add_argument("--text-only", action="store_true", help="Run in text-only console mode (no web server)")
+    parser.add_argument("--text-console", action="store_true", help="Run in text console with web server")
     args = parser.parse_args()
 
     # Set up signal handler for graceful shutdown
@@ -425,11 +540,21 @@ def main():
     elif args.console_only:
         # Console only
         run_console_mode(mpu, config)
+    elif args.text_only:
+        # Text console only
+        run_text_console_mode(mpu, config)
+    elif args.text_console:
+        # Text console with web server
+        web_thread = threading.Thread(target=start_web_server, daemon=True)
+        web_thread.start()
+        
+        # Run text console in main thread
+        run_text_console_mode(mpu, config)
     else:
         # Both console and web server
         web_thread = threading.Thread(target=start_web_server, daemon=True)
         web_thread.start()
-
+        
         # Run console in main thread
         run_console_mode(mpu, config)
 

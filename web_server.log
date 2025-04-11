@@ -35,3 +35,68 @@
 2025-04-09 18:26:41,401 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
 2025-04-09 18:26:41,405 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
 2025-04-09 18:26:41,828 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:02:28,098 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:02:28,117 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-09 20:02:28,536 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:03:50,098 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:03:50,102 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-09 20:03:50,525 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:23:17,713 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:23:17,717 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-09 20:23:18,140 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:24:11,060 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:24:11,064 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-09 20:24:11,506 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:24:35,303 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:24:35,729 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:30:50,681 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:30:50,686 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-09 20:30:51,108 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:37:35,724 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:37:36,149 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:37:47,405 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:37:47,408 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-09 20:37:47,833 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:37:56,802 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-09 20:37:57,232 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 00:10:48,724 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 00:10:48,729 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-10 00:10:49,155 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 00:11:34,550 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:35,552 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:36,553 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:37,555 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:38,556 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:39,558 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:40,560 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:41,561 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:42,566 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:43,567 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:44,569 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:45,571 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:46,572 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:47,574 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:48,575 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:49,577 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:50,580 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:51,582 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:52,583 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:53,585 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:54,587 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:55,588 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:11:56,589 - mpu6050_monitor - ERROR - Error reading sensor: [Errno 5] Input/output error
+2025-04-10 00:12:10,141 - mpu6050_monitor - ERROR - Error initializing sensor: No I2C device at address: 0x68
+2025-04-10 00:12:10,142 - mpu6050_monitor - ERROR - Check I2C connections and make sure MPU6050 is properly connected.
+2025-04-10 00:12:10,144 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-10 00:12:10,146 - mpu6050_monitor - ERROR - Error initializing sensor: No I2C device at address: 0x68
+2025-04-10 00:12:10,147 - mpu6050_monitor - ERROR - Check I2C connections and make sure MPU6050 is properly connected.
+2025-04-10 00:12:10,148 - mpu6050_monitor - WARNING - Sensor initialization failed. Using dummy data.
+2025-04-10 00:13:53,968 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 00:13:53,971 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-10 00:13:54,402 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 00:14:13,783 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 00:14:13,786 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-10 00:14:14,207 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 11:30:44,910 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully
+2025-04-10 11:30:44,923 - mpu6050_monitor - INFO - Starting web server at http://0.0.0.0:5000
+2025-04-10 11:30:45,353 - mpu6050_monitor - INFO - MPU6050 sensor initialized successfully

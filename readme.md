@@ -1,4 +1,4 @@
-# MPU6050 Monitor System v1.0.3
+# MPU6050 Monitor System v1.0.4
 
 A comprehensive monitoring system for the MPU6050 accelerometer/gyroscope on Raspberry Pi Zero 2.
 
@@ -114,7 +114,7 @@ Sensor data is logged to a JSON file (default: sensor_data.json) in the followin
 - v1.0.0: Initial release with basic console and web interfaces
 - v1.0.1: Added arrow indicators and Fahrenheit temperature display
 - v1.0.2: Improved layout, reduced 3D model size, console mode improvements
-- v1.0.3: Added API interface, fixed console key handling, improved data logging
+- v1.0.4: Added API interface, fixed console key handling, improved data logging
 
 ## License
 
